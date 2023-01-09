@@ -1,0 +1,3 @@
+[submodule "VMCTransportBridge"]
+	path = VMCTransportBridge
+	url = https://github.com/sotanmochi/VMCTransportBridge.git

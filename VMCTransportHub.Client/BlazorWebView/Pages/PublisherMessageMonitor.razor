@@ -1,0 +1,87 @@
+@page "/publisher-message-monitor"
+
+@using VMCTransportHub.Client;
+@using VMCTransportBridge;
+
+@inject PublisherContext Context;
+
+<PageTitle>Publisher Message Monitor</PageTitle>
+
+<div class="container">
+
+<div class="mb-3">
+<h1>Publisher Message Monitor</h1>
+</div>
+
+<div class="mb-3">
+<h2>Processed Message Count: <span style="color: #007bff">@(_context.MessageCount)</span></h2>
+<h2>Published Message Count: <span style="color: #007bff">@(_context.PublishedMessageCount)</span></h2>
+</div>
+
+<div class="mb-3">
+    <h2>Message Monitor</h2>
+
+    <div class="mb-3">
+        <button class="btn btn-success" @onclick="EnableMessageLogging"
+                disabled=@(_context.MessageLoggingIsEnabled)>Enable</button>
+        <button class="btn btn-danger" @onclick="DisableMessageLogging"
+                disabled=@(!_context.MessageLoggingIsEnabled)>Disable</button>
+    </div>
+
+    <div class="mb-3">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                <th scope="col">#</th>
+                <th scope="col">Processed Date Time</th>
+                <th scope="col">Message Type</th>
+                <th scope="col">Message Data</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in _context.MessageLogs.Reverse().Select((Value, Index) => new { Value, Index }))
+                {
+                    <tr>
+                        <td>@item.Index</td>
+                        <td>@item.Value.ProcessedDateTime</td>
+                        <td>@item.Value.MessageType</td>
+                        <td>@item.Value.MessageDataString</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+</div>
+
+@code {
+    private PublisherContext _context;
+    private System.Threading.Timer _timer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _context = Context;
+        _timer = new System.Threading.Timer(Update, null, 0, 1000);
+    }
+
+    private async Task EnableMessageLogging()
+    {
+        _context.EnableMessageLogging();
+    }
+
+    private async Task DisableMessageLogging()
+    {
+        _context.DisableMessageLogging();
+    }
+
+    private async Task ClearMessageLogs()
+    {
+        _context.ClearMessageLogs();
+    }
+
+    private void Update(Object stateObject)
+    {
+        InvokeAsync(() => StateHasChanged());
+    }
+}

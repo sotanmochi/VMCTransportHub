@@ -1,0 +1,139 @@
+@page "/transport"
+
+@using VMCTransportHub.Client;
+@using VMCTransportBridge;
+@using VMCTransportBridge.Transports.Grpc.Client;
+@using VMCTransportBridge.Transports.PhotonRealtime;
+
+@inject ApplicationContext ApplicationContext;
+@inject PublisherContext PublisherContext;
+@inject SubscriberContext SubscriberContext;
+
+<PageTitle>Transport</PageTitle>
+
+<div class="container">
+
+<div class="mb-3">
+<h1>Transport</h1>
+</div>
+
+<div class="mb-3">
+    <select class="form-select" value="@_applicationContext.SelectedTransportIndex" @onchange="OnTransportSelected"
+            disabled=@(_selectedTransport != null && _selectedTransport.IsConnected)>
+        <option value="-1">
+        [Select Transport]
+        </option>
+        @for (int index = 0; index < _applicationContext.TransportNames.Count; index++)
+        {
+            <option value="@index">@_applicationContext.TransportNames[index]</option>
+        }
+    </select>
+</div>
+
+@if (_selectedTransport != null)
+{
+<div class="mb-3">
+    <button class="btn btn-success" @onclick="Connect"
+            disabled=@(_selectedTransport != null && _selectedTransport.IsConnected)>Connect</button>
+    <button class="btn btn-danger" @onclick="Disconnect"
+            disabled=@(_selectedTransport != null && !_selectedTransport.IsConnected)>Disconnect</button>
+</div>
+}
+
+<div class="mb-3">
+    <h2>Status</h2>
+    <h5>Connected: 
+    @if(_selectedTransport != null && _selectedTransport.IsConnected)
+    {
+        <span style="color: #28a745">True</span>
+    }
+    else
+    {
+        <span style="color: #dc3545">False</span>
+    }
+    </h5>
+    <h5>Transport Client Id: <span style="color: #007bff">@_selectedTransport?.ClientId</span></h5>
+</div>
+
+<div class="mb-3">
+    @if (_selectedTransport is PhotonRealtimeTransport photon)
+    {
+    <h2>Transport Configuration</h2>
+    <p>PunVersion: @photon?.PunVersion</p>
+    <p>AppVersion: @photon?.AppSettings.AppVersion</p>
+    <p>Region: @photon?.AppSettings.FixedRegion</p>
+    <p>AppId: @photon?.AppSettings.AppIdRealtime</p>
+    }
+
+    @if (_selectedTransport is GrpcTransport grpc)
+    {
+    <h2>Transport Configuration</h2>
+    <p>ServerAddress: @grpc?.ServerAddress</p>
+    }
+</div>
+
+<div class="mb-3">
+@if (_selectedTransport != null)
+{
+    <h2>Configuration File</h2>
+    <h5>@ApplicationContext.ConfigurationFileName</h5>
+    <button class="btn btn-primary" @onclick="OpenConfigurationFile"
+            disabled=@(_selectedTransport is null)>Open</button>
+}
+</div>
+
+</div>
+
+@code {
+    private ApplicationContext _applicationContext;
+    private PublisherContext _publisherContext;
+    private SubscriberContext _subscriberContext;
+    private ITransport _selectedTransport;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _applicationContext = ApplicationContext;
+        _publisherContext = PublisherContext;
+        _subscriberContext = SubscriberContext;
+
+        if (_applicationContext.SelectedTransportIndex >= 0)
+        {
+            _selectedTransport = _applicationContext.Transports[_applicationContext.SelectedTransportIndex];
+        }
+    }
+
+    private async Task OnTransportSelected(ChangeEventArgs e)
+    {
+        var selectedValue = e.Value.ToString();
+
+        if (Int32.TryParse(selectedValue, out var index) && index >= 0)
+        {
+            _selectedTransport = _applicationContext.Transports[index];
+            _applicationContext.SelectedTransportIndex = index;
+        }
+        else
+        {
+            _selectedTransport = null;
+            _applicationContext.SelectedTransportIndex = -1;
+        }
+    }
+
+    private async Task Connect()
+    {
+        _publisherContext.AddTransport(_selectedTransport);
+        _subscriberContext.AddTransport(_selectedTransport);
+        await _selectedTransport.ConnectAsync();
+    }
+
+    private async Task Disconnect()
+    {
+        _publisherContext.RemoveTransport();
+        _subscriberContext.RemoveTransport();
+        await _selectedTransport.DisconnectAsync();
+    }
+
+    private async Task OpenConfigurationFile()
+    {
+        _applicationContext.OpenConfigurationFile();
+    }
+}

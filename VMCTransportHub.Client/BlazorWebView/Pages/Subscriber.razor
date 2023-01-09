@@ -1,0 +1,118 @@
+@page "/subscriber"
+
+@using VMCTransportHub.Client;
+@using VMCTransportBridge;
+
+@inject SubscriberContext Context;
+
+<PageTitle>Subscriber</PageTitle>
+
+<div class="container">
+
+<div class="mb-3">
+<h1>Subscriber</h1>
+</div>
+
+<div class="mb-3">
+    <label>VMC Destination Address</label>
+    <input class="form-control" type="text" @bind="_destinationAddress" disabled=@(_context.MessageSenderIsRunning)>
+</div>
+<div class="mb-3">
+    <label>VMC Destination Port</label>
+    <input class="form-control" type="number" min="0" max="65535" @bind="_destinationPort" disabled=@(_context.MessageSenderIsRunning)>
+</div>
+<div class="mb-3">
+    <button class="btn btn-success" @onclick="Start"
+            disabled=@(_context.MessageSenderIsRunning)>Start</button>
+    <button class="btn btn-danger" @onclick="Stop"
+            disabled=@(!_context.MessageSenderIsRunning)>Stop</button>
+</div>
+
+<form>
+<h2>Message Filter</h2>
+<div class="mb-3">
+    <label>Transport Client Id</label>
+    <input class="form-control" type="number" min="0" max="65535" @bind="_transportClientId">
+</div>
+<div class="mb-3">
+    <button class="btn btn-success" @onclick="EnableMessageFilter"
+            disabled=@(_context.MessageFilterIsEnabled)>Enable</button>
+    <button class="btn btn-danger" @onclick="DisableMessageFilter"
+            disabled=@(!_context.MessageFilterIsEnabled)>Disable</button>
+</div>
+</form>
+
+<div class="mb-3">
+<h2>Status</h2>
+<h5>Transported Message Count: <span style="color: #007bff">@(_context.TransportedMessageCount)</span></h5>
+<h5>Processed Message Count: <span style="color: #007bff">@(_context.MessageCount)</span></h5>
+<h5>Transport: 
+    @if(_context.TransportIsConnected)
+    {
+        <span style="color: #28a745">Connected</span>
+    }
+    else
+    {
+        <span style="color: #dc3545">Disconnected</span>
+    }
+</h5>
+<h5>VMC Message Sender: 
+    @if(_context.MessageSenderIsRunning)
+    {
+        <span style="color: #28a745">Running</span>
+    }
+    else
+    {
+        <span style="color: #dc3545">Not Running</span>
+    }
+</h5>
+<h5>VMC Destination Address: @_context.VMCDestinationAddress</h5>
+<h5>VMC Destination Port: @_context.VMCDestinationPort</h5>
+</div>
+
+</div>
+
+
+@code {
+    private SubscriberContext _context;
+    private string _destinationAddress;
+    private ushort _destinationPort;
+    private int _transportClientId;
+    private System.Threading.Timer _timer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _context = Context;
+        _destinationAddress = _context.VMCDestinationAddress;
+        _destinationPort = _context.VMCDestinationPort;
+        _transportClientId = _context.MessageFilterClientId;
+
+        _timer = new System.Threading.Timer(Update, null, 0, 1000);
+    }
+
+    private async Task Start()
+    {
+        _context.StartMessageSender(_destinationAddress, _destinationPort);
+    }
+
+    private async Task Stop()
+    {
+        _context.StopMessageSender();
+    }
+
+    private async Task EnableMessageFilter()
+    {
+        _context.EnableMessageFilter(_transportClientId);
+    }
+
+    private async Task DisableMessageFilter()
+    {
+        _transportClientId = -1;
+        _context.DisableMessageFilter();
+    }
+
+    private void Update(Object stateObject)
+    {
+        InvokeAsync(() => StateHasChanged());
+    }
+}

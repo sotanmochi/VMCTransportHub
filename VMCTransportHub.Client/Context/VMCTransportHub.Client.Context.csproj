@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Markdig" Version="0.30.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Utils\VMCTransportHub.Client.Utils.csproj" />
+    <ProjectReference Include="..\..\VMCTransportBridge\src\VMCTransportBridge\VMCTransportBridge.csproj" />
+    <ProjectReference Include="..\..\VMCTransportBridge\src\VMCTransportBridge.Transports\Grpc\Client\VMCTransportBridge.Transports.Grpc.Client.csproj" />
+    <ProjectReference Include="..\..\VMCTransportBridge\src\VMCTransportBridge.Transports\PhotonRealtime\VMCTransportBridge.Transports.PhotonRealtime.csproj" />
+  </ItemGroup>
+
+</Project>

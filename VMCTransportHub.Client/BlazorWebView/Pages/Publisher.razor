@@ -1,0 +1,84 @@
+@page "/publisher"
+
+@using VMCTransportHub.Client;
+@using VMCTransportBridge;
+
+@inject PublisherContext Context;
+
+<PageTitle>Publisher</PageTitle>
+
+<div class="container">
+
+<div class="mb-3">
+<h1>Publisher</h1>
+</div>
+
+<div class="mb-3">
+    <label>VMC Source Port</label>
+    <input class="form-control" type="number" min="0" max="65535" @bind="_port" disabled=@(_context.MessageReceiverIsRunning)>
+</div>
+
+<div class="mb-3">
+    <button class="btn btn-success" @onclick="Start"
+            disabled=@(_context.MessageReceiverIsRunning)>Start</button>
+    <button class="btn btn-danger" @onclick="Stop"
+            disabled=@(!_context.MessageReceiverIsRunning)>Stop</button>
+</div>
+
+<div class="mb-3">
+<h2>Status</h2>
+<h5>Processed Message Count: <span style="color: #007bff">@(_context.MessageCount)</span></h5>
+<h5>Published Message Count: <span style="color: #007bff">@(_context.PublishedMessageCount)</span></h5>
+<h5>Transport: 
+    @if(_context.TransportIsConnected)
+    {
+        <span style="color: #28a745">Connected</span>
+    }
+    else
+    {
+        <span style="color: #dc3545">Disconnected</span>
+    }
+</h5>
+<h5>VMC Message Receiver: 
+    @if(_context.MessageReceiverIsRunning)
+    {
+        <span style="color: #28a745">Running</span>
+    }
+    else
+    {
+        <span style="color: #dc3545">Not Running</span>
+    }
+</h5>
+<h5>VMC Source Port: @_context.VMCSourcePort</h5>
+</div>
+
+</div>
+
+@code {
+    private PublisherContext _context;
+    private ushort _port;
+    private System.Threading.Timer _timer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _context = Context;
+        _port = _context.VMCSourcePort;
+
+        _timer = new System.Threading.Timer(Update, null, 0, 1000);
+    }
+
+    private async Task Start()
+    {
+        _context.StartMessageReceiver(_port);
+    }
+
+    private async Task Stop()
+    {
+        _context.StopMessageReceiver();
+    }
+
+    private void Update(Object stateObject)
+    {
+        InvokeAsync(() => StateHasChanged());
+    }
+}
